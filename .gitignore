@@ -1,0 +1,17 @@
+*.pyc
+*__pycache__*
+log
+data/*
+checkpoints/*
+*.png
+*.jpg
+*.zip
+results/*
+unittest_output/*
+json/*
+tmp*
+*.old
+runs
+.vscode
+test
+logs

@@ -1,0 +1,45 @@
+{
+    "id":1,
+    "mode": "demosaic",
+    "gpu_ids": [0,1],
+    "dataset_name":"MIT",
+    "datasets": {
+        "train": {
+            "mode":"LRHR",
+            "datadir": "/ssd/DemosaicDataset/MIT_Demosaic/images/train",
+            "n_workers": 32,
+            "batch_size": 64,
+            "patch_size": 128
+            // "noise": {
+            //     // type: Gaussian, Poisson or combination of Gaussian and Poisson
+            //     "type": null,
+            //     // Poisson
+            //     "a":null,
+            //     // Gaussian
+            //     "b":null
+            // }
+        },
+        "val": {
+            "mode":"LRHR",
+            "datadir": "/ssd/DemosaicDataset/MIT_Demosaic/images/val"
+        }
+    },
+
+    "solver": {
+        "type": "ADAM",
+        "num_epochs": 20,
+        "learning_rate": 0.0004,
+        "weight_decay": 0.00001,
+        "lr_scheme": "MultiStepLR",
+        "lr_steps": [10,20,30,40,60],
+        "lr_gamma": 0.5,
+        "loss_type": "l1",
+        "manual_seed": 0,
+        "skip_threshold": 10,
+        "split_batch": 1,
+        "save_ckp_step": 3,
+        "save_vis_step": 1
+        // "pretrain": "resume",
+        // "pretrained_path": "checkpoints/3JPS/001_JointPixel_MIT_a=0.0000_b=0.0000/epochs/best_ckp.pth"
+    }
+}
