@@ -41,9 +41,6 @@ def mkdir_and_rename(path):
 """ #################### """
 
 def quantize(img):
-    # print(img.min())
-    # print(img.max())
-    # exit()
     max_rgb = 255
     return img.mul(max_rgb).clamp(0, max_rgb).round()
 

@@ -113,8 +113,9 @@ def main(rank,world_size):
     NUM_EPOCH = int(opt['solver']['num_epochs'])
     start_epoch = solver_log['epoch']
 
-    print("Method: {} || Noise a: {:.4f}  b: {:.4f} || Epoch Range: ({} ~ {})".format(
+    print("Method: {} || CFA: {} || Noise a: {:.4f}  b: {:.4f} || Epoch Range: ({} ~ {})".format(
         model_name,
+        opt['cfa'],
         opt['a'],
         opt['b'],
         start_epoch,
@@ -186,14 +187,6 @@ def main(rank,world_size):
 
                 # calculate evaluation metrics
                 visuals = solver.get_current_visual()
-                if rank==0 and epoch == 4:
-                    permute = [2,1,0]
-                    mosaic_output = batch['mosaic'][0][permute,:,:]
-                    ground_truth_output = batch['ground_truth'][0][permute,:,:]
-                    demosaicked_output = solver.demosaicked[0][permute,:,:]
-                    writer.add_image('mosaic/{}_{}'.format(epoch,iter), mosaic_output)
-                    writer.add_image('ground_truth/{}_{}'.format(epoch,iter), ground_truth_output)
-                    writer.add_image('demosaicked/{}_{}'.format(epoch,iter), demosaicked_output)
                 
                 psnr, ssim = util.calc_metrics(visuals['ground_truth'], visuals['demosaic'])
                 psnr_list.append(psnr)
@@ -207,6 +200,14 @@ def main(rank,world_size):
                 pbar.update()
                 cnt += 1
                 if(opt['debug']):
+                    if rank==0 and epoch == 4:
+                        permute = [2,1,0]
+                        mosaic_output = batch['mosaic'][0][permute,:,:]
+                        ground_truth_output = batch['ground_truth'][0][permute,:,:]
+                        demosaicked_output = solver.demosaicked[0][permute,:,:]
+                        writer.add_image('mosaic/{}_{}'.format(epoch,iter), mosaic_output)
+                        writer.add_image('ground_truth/{}_{}'.format(epoch,iter), ground_truth_output)
+                        writer.add_image('demosaicked/{}_{}'.format(epoch,iter), demosaicked_output)
                     if cnt==10:
                         break
                 

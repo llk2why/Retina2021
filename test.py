@@ -126,10 +126,7 @@ def main():
                                                                       sum(total_time)/len(total_time)))
 
         # save demosaic results for further evaluation on MATLAB
-        if need_HR:
-            save_img_path = os.path.join('./results/demosaic', model_dataset_name, bm)
-        else:
-            save_img_path = os.path.join('./results/demosaic', model_dataset_name,bm)
+        save_img_path = os.path.join('./results/demosaic', model_dataset_name, opt['cfa'], bm)
         if opt['output_dir'] is not None:
             save_img_path=save_img_path.replace('./results/demosaic',opt['output_dir'])
 
@@ -145,9 +142,9 @@ def main():
 
     if need_HR:
         if opt['mode']=='demosaic':
-            result_txt_path = os.path.join('./results/demosaic', model_dataset_name,'result.txt')
+            result_txt_path = os.path.join('./results/demosaic', model_dataset_name, opt['cfa'],'result.txt')
             if opt['output_dir'] is not None:
-                result_txt_path = os.path.join(opt['output_dir'], model_dataset_name,'result.txt')
+                result_txt_path = os.path.join(opt['output_dir'], model_dataset_name, opt['cfa'],'result.txt')
             with open(result_txt_path,'w') as f:
                 f.write('{}\n'.format(model_dataset_name.replace('_',' ')))
                 for bm,psnr,ssim in zip(bm_names,psnrs,ssims):

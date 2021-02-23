@@ -7,8 +7,8 @@
         "train": {
             "mode":"LRHR",
             "datadir": "/ssd/DemosaicDataset/MIT_Demosaic/images/train",
-            "n_workers": 32,
-            "batch_size": 64,
+            "n_workers": 32,//32
+            "batch_size": 64,//64
             "patch_size": 128
             // "noise": {
             //     // type: Gaussian, Poisson or combination of Gaussian and Poisson
@@ -27,7 +27,7 @@
 
     "solver": {
         "type": "ADAM",
-        "num_epochs": 20,
+        "num_epochs": 40,//20
         "learning_rate": 0.0004,
         "weight_decay": 0.00001,
         "lr_scheme": "MultiStepLR",

@@ -183,8 +183,65 @@ class Solver(BaseSolver):
             else:
                 self.demosaicked = SR
             
+            # print(self.model.__class__.__name__)
+            # print(self.mosaic.shape)
+            # print(self.demosaicked.shape)
+            # exit()
 
-        self.model.train()
+            # mosaic_output = self.mosaic.float().cpu().squeeze()[:,:,:]
+            # ground_truth_output = self.ground_truth.float().cpu().squeeze()
+            # demosaicked_output = self.demosaicked.float().cpu().squeeze()
+
+            # import numpy as np
+            # if os.path.exists('tmp.npy'):
+            #     print('mosaic_output:')
+            #     tmp_np = np.load('tmp.npy')
+            #     flag = np.all(np.array_equal(tmp_np,mosaic_output))
+            #     if flag: print('equal!!')
+            #     else: print('unequal!!!!')
+            # else:
+            #     np.save('tmp.npy',mosaic_output)
+
+            # if os.path.exists('tmp2.npy'):
+            #     print('demosaicked_output:')
+            #     tmp_np = np.load('tmp2.npy')
+            #     flag = np.all(np.array_equal(tmp_np,demosaicked_output))
+            #     if flag: print('equal!!')
+            #     else: print('unequal!!!!')
+            # else:
+            #     np.save('tmp2.npy',demosaicked_output)
+
+            # if os.path.exists('tmp3.npy'):
+            #     print('ground_truth_output:')
+            #     tmp_np = np.load('tmp3.npy')
+            #     flag = np.all(np.array_equal(tmp_np,ground_truth_output))
+            #     if flag: print('equal!!')
+            #     else: print('unequal!!!!')
+            # else:
+            #     np.save('tmp3.npy',ground_truth_output)
+
+            # print(mosaic_output.shape)
+            # print(ground_truth_output.shape)
+            # print(demosaicked_output.shape)
+
+            # mosaic_output,ground_truth_output,demosaicked_output = \
+            #     util.tensorToNumpy([mosaic_output,ground_truth_output,demosaicked_output])
+
+            # print(mosaic_output.shape)
+            # print(ground_truth_output.shape)
+            # print(demosaicked_output.shape)
+
+            # # mosaic_output = cv2.cvtColor(mosaic_output,cv2.COLOR_RGB2BGR)
+            # ground_truth_output = cv2.cvtColor(ground_truth_output,cv2.COLOR_RGB2BGR)
+            # demosaicked_output = cv2.cvtColor(demosaicked_output,cv2.COLOR_RGB2BGR)
+
+            # # cv2.imwrite('mosaic.png',mosaic_output)
+            # cv2.imwrite('ground_truth.png',ground_truth_output)
+            # cv2.imwrite('demosaicked.png',demosaicked_output)
+            # exit()
+            
+
+        # self.model.train()
         if self.is_train:
             loss_pix = self.criterion_pix(self.demosaicked, self.ground_truth)
             return loss_pix.item()
@@ -286,12 +343,11 @@ class Solver(BaseSolver):
                 checkpoint = torch.load(model_path)
                 self.model.load_state_dict(checkpoint['state_dict'])
 
-                if self.opt['pretrained_path'] == 'resume':
-                    self.cur_epoch = checkpoint['epoch'] + 1
-                    self.optimizer.load_state_dict(checkpoint['optimizer'])
-                    self.best_pred = checkpoint['best_pred']
-                    self.best_epoch = checkpoint['best_epoch']
-                    self.records = checkpoint['records']
+                self.cur_epoch = checkpoint['epoch'] + 1
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
+                self.best_pred = checkpoint['best_pred']
+                self.best_epoch = checkpoint['best_epoch']
+                self.records = checkpoint['records']
 
             else:
                 device = torch.device("cuda")

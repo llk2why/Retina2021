@@ -102,8 +102,14 @@ def create_model(opt):
             'UNet',
             'DoublePath'
         ]:
+        params = ''
+        if 'RandomFuse' in opt['cfa']:
+            fusion_degree = opt['cfa'][-1]
+            params = 'fusion_degree={}'.format(fusion_degree)
+            model = model + '_fusion'
         exec('from network import {}'.format(model))
-        net = eval('{}()'.format(model))
+        print(model)
+        net = eval('{}({})'.format(model,params))
     else:
         raise NotImplementedError("Network [{}] is not recognized.".format(model))
 

@@ -20,6 +20,35 @@ class LRHRDataset(data.Dataset):
         self.train = (opt['phase'] == 'train')
         self.paths_mosaic, self.paths_ground_truth = None, None
         self.basic_mask = None
+        self.bind_pattern = None
+
+        self.no_split_cfas = [
+            'RGGB',
+            'Random',
+            'Random16',
+            'BIND41_RTN100_16',
+            'RandomBlack20',
+            'Random_pixel',
+            'Random_2JCS',
+            'Random_3JCS',
+            'Random_4JCS',
+            'RandomFuse2',
+            'RandomFuse3',
+            'RandomFuse4',
+        ]
+
+        self.random_type_class = [
+            'Random_pixel',
+            'Random_2JCS',
+            'Random_3JCS',
+            'Random_4JCS'
+        ]
+
+        self.fusion_options = [
+            'RandomFuse2',
+            'RandomFuse3',
+            'RandomFuse4'
+        ]
 
         # gaussian & poisson noise combine, pixel value domain nomailized to 1
         a = opt['a']
@@ -43,7 +72,11 @@ class LRHRDataset(data.Dataset):
     
 
     def _reset(self):
-        if 'Random' in self.cfa:
+        if self.cfa in [
+            'Random',
+            'Random16',
+            'RandomBlack20'
+        ]:
             self.basic_mask = None
 
 
@@ -60,16 +93,25 @@ class LRHRDataset(data.Dataset):
 
     def __getitem__(self, idx):
         ground_truth, ground_truth_path = self._load_ground_truth(idx)
-        self.basic_mask = self._get_basic_mask(ground_truth.shape)
-        mosaic, mask = common.remosaic(ground_truth,self.cfa,self.basic_mask)
-        # print('mosaic',mosaic.shape)
-        # print('ground_truth',ground_truth.shape)
-        # output_mosaic = cv2.cvtColor(mosaic.astype(np.uint8),cv2.COLOR_RGB2BGR)
-        # output_ground_truth = cv2.cvtColor(ground_truth.astype(np.uint8),cv2.COLOR_RGB2BGR)
-        # cv2.imwrite('mosaic.png',output_mosaic.astype(np.uint8))
-        # cv2.imwrite('ground_truth.png',output_ground_truth.astype(np.uint8))
-        # exit()
-        mosaic, ground_truth = self._preprocess(mosaic, ground_truth,mask)
+        if 'RandomFuse' in self.cfa:
+            real_cfa = self.cfa
+            fusion_degree = int(self.cfa[-1])
+            mosaics = []
+            for i in range(fusion_degree):
+                ground_truth_ = ground_truth.copy()
+                self.cfa = self.random_type_class[i]
+                self.basic_mask = self._get_basic_mask(ground_truth_.shape)
+                mosaic, mask = mosaic, mask = common.remosaic(ground_truth_,self.cfa,self.basic_mask)
+                mosaic, ground_truth_ = self._preprocess(mosaic, ground_truth_,mask)
+                mosaics.append(mosaic)
+                self.basic_mask = None
+            ground_truth = ground_truth_
+            mosaic = torch.cat(mosaics,dim=0)
+            self.cfa = real_cfa
+        else:
+            self.basic_mask = self._get_basic_mask(ground_truth.shape)
+            mosaic, mask = common.remosaic(ground_truth,self.cfa,self.basic_mask)
+            mosaic, ground_truth = self._preprocess(mosaic, ground_truth,mask)
         self._reset()
         return {'mosaic': mosaic, 'ground_truth': ground_truth, 'ground_truth_path': ground_truth_path}
 
@@ -107,7 +149,7 @@ class LRHRDataset(data.Dataset):
         """
         img = img.clone()
         cfa = self.cfa
-        if cfa in ['RGGB','Random','BIND41_RTN100_16','RandomBlack20']:
+        if cfa in self.no_split_cfas:
             pass
         elif cfa == '2JCS':
             img[:,::2,:] = img[:,::2,:]+img[:,1::2,:]
@@ -125,7 +167,7 @@ class LRHRDataset(data.Dataset):
             img[:,1::2,:] = 0
             img[:,:,1::2] = 0
         else:
-            raise Exception("Undefined CFA")
+            raise Exception("Undefined CFA \"{}\"".format(self.cfa))
         return img
 
 
@@ -137,7 +179,7 @@ class LRHRDataset(data.Dataset):
         """
         img = img.clone()
         cfa = self.cfa
-        if cfa in ['RGGB','Random','Random16','BIND41_RTN100_16','RandomBlack20']:
+        if cfa in self.no_split_cfas:
             pass
         elif cfa == '2JCS':
             img[:,::2,:] = img[:,::2,:]/2
@@ -163,7 +205,45 @@ class LRHRDataset(data.Dataset):
         return img
 
 
-    def _process_bind_pattern(self, mosaic, ground_truth,mask):
+    def _process_capsule(self,mosaic,bind_pattern,mask,capsule_type):
+        index = bind_pattern==capsule_type
+        assert mosaic.dtype == np.float32
+        type_loc_delta = {
+            1:[],
+            2:[(0,1)],
+            3:[(1,0)],
+            4:[(0,1),(1,1)],
+            5:[(1,0),(1,1)],
+            6:[(1,0),(0,1)],
+            7:[(-1,0),(0,-1)],
+            8:[(0,1),(0,2)],
+            9:[(1,0),(2,0)],
+            10:[(0,1),(1,0),(1,1)],
+            11:[(1,0),(2,0),(2,1)],
+            12:[(1,0),(2,0),(3,0)],
+            13:[(0,1),(0,2),(0,3)],
+            14:[(0,1),(1,1),(1,2)]
+        }
+        index_list = []
+        sum = np.zeros_like(mosaic).astype(np.float32)
+        sum[index] = mosaic[index]
+
+        total_idx = index.copy()
+        for di,dj in type_loc_delta[capsule_type]:
+            idx = index.copy()
+            if di!=0: idx = np.concatenate((idx[-di:,:],idx[:-di,:]),axis=0)
+            if dj!=0: idx = np.concatenate((idx[:,-dj:],idx[:,:-dj]),axis=1)
+            sum[index] += mosaic[idx]
+            total_idx = total_idx | idx
+            index_list.append(idx)
+        sum = np.sum(sum,axis=2)
+        sum[index] = sum[index]/(len(index_list)+1)
+        for idx in index_list:
+            sum[idx] = sum[index]
+        mosaic[total_idx] = mask[total_idx]*(sum[:,:,None][total_idx])
+
+
+    def _process_bind16_pattern(self, mosaic, ground_truth,mask):
         bind_pattern = common.BIND_PATTERN[self.cfa]
         hb,wb = bind_pattern.shape
         mosaic = mosaic[:h//16*16,:w//16*16]
@@ -175,23 +255,35 @@ class LRHRDataset(data.Dataset):
         if wb<w:
             bind_pattern = np.tile(bind_pattern,(1,ceil(w/wb)))
         bind = bind_pattern[:h,:w]
-        one_index = bind==1 # horizontal capsule
-        two_index = bind==2 # vertical capsule
-        other_one_index = np.concatenate((one_index[:,-1:],one_index[:,:-1]),axis=1)
-        other_two_index = np.concatenate((two_index[-1:,:],two_index[:-1,:]),axis=0)
-        
-        mosaic[one_index] = (mosaic[one_index]+mosaic[other_one_index])/2
-        mosaic[other_one_index] = mosaic[one_index]
+        self._process_capsule(mosaic,bind,mask,capsule_type=2)
+        self._process_capsule(mosaic,bind,mask,capsule_type=3)
 
-        mosaic[two_index] = (mosaic[two_index]+mosaic[other_two_index])/2
-        mosaic[other_two_index] = mosaic[two_index]
         return mosaic
 
+    def _process_random_joint_pattern(self, mosaic, mask):
+        if self.bind_pattern is None:
+            self.bind_pattern = np.load('cfa_pattern/{}.npy'.format(self.cfa))
+        
+        if self.cfa=='Random_pixel': return mosaic
+        elif self.cfa=='Random_2JCS': capsule_types = [2,3]
+        elif self.cfa=='Random_3JCS': capsule_types = [4,5,6,7,8,9]
+        elif self.cfa=='Random_4JCS': capsule_types = [10,11,12,13,14]
+        
+        for capsule_type in capsule_types:
+            self._process_capsule(mosaic,self.bind_pattern,mask,capsule_type)
+        return mosaic
     
     def _preprocess(self, mosaic, ground_truth,mask):
-
         if 'BIND' in self.cfa:
-            mosaic = self._process_bind_pattern(mosaic, ground_truth,mask)
+            mosaic = self._process_bind16_pattern(mosaic, ground_truth,mask)
+        
+        if self.cfa in self.random_type_class:
+            mosaic = mosaic.astype(np.float32)
+            mosaic = self._process_random_joint_pattern(mosaic,mask)
+            # mosaic = mosaic.astype(np.uint8)
+            # cv2.cvtColor(mosaic,cv2.COLOR_RGB2BGR)
+            # cv2.imwrite('Random_2JCS_example.png',mosaic)
+            # exit()
 
         """
         =========================↑↑↑numpy array↑↑↑=====================================
@@ -203,14 +295,12 @@ class LRHRDataset(data.Dataset):
         ========================↓↓↓torch tensor↓↓↓=====================================
         """
         transform = ToTensor()
-        mosaic = transform(mosaic.astype(np.int16)) # np.int16 => tensor.int16
-        # print(ground_truth.dtype)
-        ground_truth = transform(ground_truth) # np.uint8 => tensor.float32
-        # print(mosaic.dtype)
-        # print(ground_truth.dtype)
-        # print(ground_truth.max())
-        # exit()
-        loc = transform(mask.astype(np.bool)) # np.bool => tensor.bool
+        if self.cfa in self.random_type_class or 'BIND' in self.cfa:
+            mosaic = transform(mosaic.astype(np.float32))    # np.float32 =>   tensor.float32
+        else:
+            mosaic = transform(mosaic.astype(np.int16))      # np.int16   =>   tensor.int16
+        ground_truth = transform(ground_truth)               # np.uint8   =>   tensor.float32
+        loc = transform(mask.astype(np.bool))                # np.bool    =>   tensor.bool
 
         # melt multiple pixels into one
         mosaic = self.transform2cfa(mosaic)
