@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 
-from latex_tools import head,end,draw_color_unit
+from latex_tools import head,end,draw_color_unit,draw_transparent_circle
 
 
 def convert(parms, type):
@@ -30,6 +30,8 @@ def convert(parms, type):
         draw_code[((draw_code<4)|(draw_code>9))&(draw_code!=-3)]=-1
     elif type == 4:
         draw_code[((draw_code<10)|(draw_code>14))&(draw_code!=-4)]=-1
+    elif type == 6:
+        draw_code[(draw_code<=60)&(draw_code!=-6)]=-1
 
     # 混色
     color_ = color.copy()
@@ -37,30 +39,41 @@ def convert(parms, type):
         for j in range(w):
             code = draw_code[i][j]
             queue = [(i,j)]
-            op = {
-                2:[1],
-                3:[128],
-                4:[1,129],
-                5:[128,129],
-                6:[1,128],
-                7:[-1,-128],
-                8:[1,2],
-                9:[128,256],
-                10:[1,128,129],
-                11:[128,256,257],
-                12:[128,256,384],
-                13:[1,2,3],
-                14:[1,129,130]
+            type_loc_delta = {
+                1:[],
+                2:[(0,1)],
+                3:[(1,0)],
+                4:[(0,1),(1,1)],
+                5:[(1,0),(1,1)],
+                6:[(1,0),(0,1)],
+                7:[(-1,0),(0,-1)],
+                8:[(0,1),(0,2)],
+                9:[(1,0),(2,0)],
+                10:[(0,1),(1,0),(1,1)],
+                11:[(1,0),(2,0),(2,1)],
+                12:[(1,0),(2,0),(3,0)],
+                13:[(0,1),(0,2),(0,3)],
+                14:[(0,1),(1,1),(1,2)],
+                61:[(0,1),(1,0),(1,1),(2,0),(2,1)],
+                62:[(-1,0),(-1,1),(0,-1),(0,1),(0,2)],
+                63:[(-1,0),(0,-1),(0,1),(0,2),(1,1)],
+                64:[(1,0),(1,1),(1,2),(1,3),(2,2)],
+                65:[(0,1),(1,0),(1,1),(1,2),(2,1)],
+                66:[(0,1),(1,1),(2,1),(2,2),(2,3)],
+                67:[(1,0),(2,0),(3,0),(3,1),(3,2)],
+                68:[(0,1),(0,2),(0,3),(0,4),(0,5)],
+                69:[(0,1),(1,1),(2,1),(3,1),(3,2)],
             }
-            if code in op:
-                for idx in op[code]:
-                    ii = i+(j+idx)//128
-                    jj = (j+idx)%128
+            if code in type_loc_delta:
+                for di,dj in type_loc_delta[code]:
+                    ii = i+di
+                    jj = j+dj
                     # print(ii,jj,end=' ')
                     if type == 5 or \
                     (code in range(2,4) and type == 2) or \
                     (code in range(4,10) and type == 3) or \
-                    (code in range(10,15) and type ==4 ):
+                    (code in range(10,15) and type ==4 ) or \
+                    (code in range(61,70) and type ==6 ):
                         queue.append((ii,jj))
                         if ii>=128 or jj>=128:
                             print('\nBUG!')
@@ -83,10 +96,12 @@ def convert(parms, type):
     # print(draw_code)
     # print(color)
 
-    for i in range(h):
-        for j in range(w):
-            tex_ts += " \\fill[R,draw, shift = {}, opacity=0.0]" .format("{(" + str(j) +", " + str(-i) + ")}")
-            tex_ts += "{[rounded corners=9](-0.37, -0.37) -- (0.37, -0.37)  -- (0.37,0.37) -- (-0.37,0.37) -- cycle {}};\n"
+    draw_transparent_circle(0,0,'R')
+    draw_transparent_circle(h-1,w-1,'R')
+    # for i in range(h):
+    #     for j in range(w):
+    #         tex_ts += " \\fill[R,draw, shift = {}, opacity=0.0]" .format("{(" + str(j) +", " + str(-i) + ")}")
+    #         tex_ts += "{[rounded corners=9](-0.37, -0.37) -- (0.37, -0.37)  -- (0.37,0.37) -- (-0.37,0.37) -- cycle {}};\n"
     for i in range(h):
         for j in range(w):
             tp = draw_code[i][j]
@@ -107,19 +122,22 @@ def get_pattern(capsule_class):
     flatten_pattern = cv2.cvtColor(flatten_pattern,cv2.COLOR_BGR2RGB)
     cfa = np.argmax(flatten_pattern,axis=2)
 
+    info = {
+        2:'Random_2JCS',
+        3:'Random_3JCS',
+        4:'Random_4JCS',
+        6:'Random_6JCS',
+    }
+
     if capsule_class == 1:
-        draw_code = np.ones((128,128))
         name = 'Random_pixel'
-    elif capsule_class == 2:
-        draw_code = np.load('../Random_2JCS.npy')
-        name = 'Random_2JCS'
-    elif capsule_class == 3:
-        draw_code = np.load('../Random_3JCS.npy')
-        name = 'Random_3JCS'
-    elif capsule_class == 4:
-        draw_code = np.load('../Random_4JCS.npy')
-        name = 'Random_4JCS'
-    
+        draw_code = np.ones((128,128))
+    elif capsule_class in info:
+        name = info[capsule_class]
+        draw_code = np.load('../{}.npy'.format(name))
+    else:
+        raise ValueError('unsupported capsule class!')
+
     return cfa,draw_code,name
     
     
@@ -127,7 +145,8 @@ def get_pattern(capsule_class):
 
 def main():
     os.makedirs('hierarchy_cfa',exist_ok=True)
-    for i in range(1,5):
+    # for i in range(1,6):
+    for i in [6]:
         params = get_pattern(i)
         convert(params,i)
 

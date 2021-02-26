@@ -1,0 +1,1 @@
+from .config import TYPE_LOC_DELTA

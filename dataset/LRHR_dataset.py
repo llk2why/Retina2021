@@ -6,6 +6,7 @@ import torch.utils.data as data
 
 from math import ceil
 from dataset import common
+from cfa_pattern import TYPE_LOC_DELTA
 from torchvision.transforms import Compose, ToTensor
 
 
@@ -20,7 +21,8 @@ class LRHRDataset(data.Dataset):
         self.train = (opt['phase'] == 'train')
         self.paths_mosaic, self.paths_ground_truth = None, None
         self.basic_mask = None
-        self.bind_pattern = None
+        self.bind_patterns = dict()
+        # self.bind_pattern = None
 
         self.no_split_cfas = [
             'RGGB',
@@ -28,27 +30,40 @@ class LRHRDataset(data.Dataset):
             'Random16',
             'BIND41_RTN100_16',
             'RandomBlack20',
+            'Random_base',
             'Random_pixel',
             'Random_2JCS',
             'Random_3JCS',
             'Random_4JCS',
+            'Random_6JCS',
             'RandomFuse2',
             'RandomFuse3',
             'RandomFuse4',
+            'RandomFuse6',
         ]
 
-        self.random_type_class = [
+        self.random_type_class = {
+            1:'Random_pixel',
+            2:'Random_2JCS',
+            3:'Random_3JCS',
+            4:'Random_4JCS',
+            6:'Random_6JCS',
+        }
+
+        self.capsule_cfas = [
             'Random_pixel',
             'Random_2JCS',
             'Random_3JCS',
-            'Random_4JCS'
+            'Random_4JCS',
+            'Random_6JCS'
         ]
 
-        self.fusion_options = [
-            'RandomFuse2',
-            'RandomFuse3',
-            'RandomFuse4'
-        ]
+        self.fusion_options = {
+            'RandomFuse2':[1,2],
+            'RandomFuse3':[1,2,3],
+            'RandomFuse4':[1,2,3,4],
+            'RandomFuse6':[1,2,4,6]
+        }
 
         # gaussian & poisson noise combine, pixel value domain nomailized to 1
         a = opt['a']
@@ -93,15 +108,23 @@ class LRHRDataset(data.Dataset):
 
     def __getitem__(self, idx):
         ground_truth, ground_truth_path = self._load_ground_truth(idx)
+        # add noise for random jcs
+        noise = None
+        if self.noise_flag and (self.cfa in self.capsule_cfas or self.cfa in self.random_type_class):
+            a,b = self.opt['a'],self.opt['b']
+            if not common.is_zero(a):
+                raise ValueError('parameter a is not supported for capsule cfa')
+            noise = np.random.normal(loc=0,scale=np.sqrt(b),size=ground_truth.shape)
         if 'RandomFuse' in self.cfa:
             real_cfa = self.cfa
-            fusion_degree = int(self.cfa[-1])
             mosaics = []
-            for i in range(fusion_degree):
+            for option in self.fusion_options[real_cfa]:
                 ground_truth_ = ground_truth.copy()
-                self.cfa = self.random_type_class[i]
+                self.cfa = self.random_type_class[option]
                 self.basic_mask = self._get_basic_mask(ground_truth_.shape)
-                mosaic, mask = mosaic, mask = common.remosaic(ground_truth_,self.cfa,self.basic_mask)
+                mosaic, mask = common.remosaic(ground_truth_,self.cfa,self.basic_mask)
+                if noise is not None:
+                    mosaic = mosaic.astype(np.float32) + noise*mask
                 mosaic, ground_truth_ = self._preprocess(mosaic, ground_truth_,mask)
                 mosaics.append(mosaic)
                 self.basic_mask = None
@@ -111,6 +134,8 @@ class LRHRDataset(data.Dataset):
         else:
             self.basic_mask = self._get_basic_mask(ground_truth.shape)
             mosaic, mask = common.remosaic(ground_truth,self.cfa,self.basic_mask)
+            if noise is not None:
+                mosaic = mosaic.astype(np.float32) + noise*mask
             mosaic, ground_truth = self._preprocess(mosaic, ground_truth,mask)
         self._reset()
         return {'mosaic': mosaic, 'ground_truth': ground_truth, 'ground_truth_path': ground_truth_path}
@@ -208,39 +233,25 @@ class LRHRDataset(data.Dataset):
     def _process_capsule(self,mosaic,bind_pattern,mask,capsule_type):
         index = bind_pattern==capsule_type
         assert mosaic.dtype == np.float32
-        type_loc_delta = {
-            1:[],
-            2:[(0,1)],
-            3:[(1,0)],
-            4:[(0,1),(1,1)],
-            5:[(1,0),(1,1)],
-            6:[(1,0),(0,1)],
-            7:[(-1,0),(0,-1)],
-            8:[(0,1),(0,2)],
-            9:[(1,0),(2,0)],
-            10:[(0,1),(1,0),(1,1)],
-            11:[(1,0),(2,0),(2,1)],
-            12:[(1,0),(2,0),(3,0)],
-            13:[(0,1),(0,2),(0,3)],
-            14:[(0,1),(1,1),(1,2)]
-        }
         index_list = []
         sum = np.zeros_like(mosaic).astype(np.float32)
         sum[index] = mosaic[index]
 
         total_idx = index.copy()
-        for di,dj in type_loc_delta[capsule_type]:
+        for di,dj in TYPE_LOC_DELTA[capsule_type]:
             idx = index.copy()
-            if di!=0: idx = np.concatenate((idx[-di:,:],idx[:-di,:]),axis=0)
-            if dj!=0: idx = np.concatenate((idx[:,-dj:],idx[:,:-dj]),axis=1)
+            idx = np.roll(idx,shift=(di,dj,),axis=(0,1,))
             sum[index] += mosaic[idx]
             total_idx = total_idx | idx
             index_list.append(idx)
+
         sum = np.sum(sum,axis=2)
         sum[index] = sum[index]/(len(index_list)+1)
+        
         for idx in index_list:
             sum[idx] = sum[index]
         mosaic[total_idx] = mask[total_idx]*(sum[:,:,None][total_idx])
+        return mosaic
 
 
     def _process_bind16_pattern(self, mosaic, ground_truth,mask):
@@ -261,29 +272,28 @@ class LRHRDataset(data.Dataset):
         return mosaic
 
     def _process_random_joint_pattern(self, mosaic, mask):
-        if self.bind_pattern is None:
-            self.bind_pattern = np.load('cfa_pattern/{}.npy'.format(self.cfa))
-        
-        if self.cfa=='Random_pixel': return mosaic
-        elif self.cfa=='Random_2JCS': capsule_types = [2,3]
-        elif self.cfa=='Random_3JCS': capsule_types = [4,5,6,7,8,9]
-        elif self.cfa=='Random_4JCS': capsule_types = [10,11,12,13,14]
+        cfa = self.cfa
+        if cfa not in self.bind_patterns:
+            self.bind_patterns[cfa] = np.load('cfa_pattern/{}.npy'.format(cfa))
+        bind_pattern = self.bind_patterns[cfa]
+
+        if cfa=='Random_pixel': return mosaic
+        elif cfa=='Random_2JCS': capsule_types = [2,3]
+        elif cfa=='Random_3JCS': capsule_types = [4,5,6,7,8,9]
+        elif cfa=='Random_4JCS': capsule_types = [10,11,12,13,14]
+        elif cfa=='Random_6JCS': capsule_types = [61,62,63,64,65,66,67,68,69]
         
         for capsule_type in capsule_types:
-            self._process_capsule(mosaic,self.bind_pattern,mask,capsule_type)
+            mosaic = self._process_capsule(mosaic,bind_pattern,mask,capsule_type)
         return mosaic
     
     def _preprocess(self, mosaic, ground_truth,mask):
         if 'BIND' in self.cfa:
             mosaic = self._process_bind16_pattern(mosaic, ground_truth,mask)
         
-        if self.cfa in self.random_type_class:
+        if self.cfa in self.random_type_class.values():
             mosaic = mosaic.astype(np.float32)
             mosaic = self._process_random_joint_pattern(mosaic,mask)
-            # mosaic = mosaic.astype(np.uint8)
-            # cv2.cvtColor(mosaic,cv2.COLOR_RGB2BGR)
-            # cv2.imwrite('Random_2JCS_example.png',mosaic)
-            # exit()
 
         """
         =========================↑↑↑numpy array↑↑↑=====================================
@@ -306,7 +316,7 @@ class LRHRDataset(data.Dataset):
         mosaic = self.transform2cfa(mosaic)
 
         # add noise
-        if self.noise_flag:
+        if self.noise_flag and self.cfa not in self.capsule_cfas:
             mu = torch.zeros(mosaic.shape)
             noise_sigma = self.sigmas[mosaic.type(torch.long)]
             noise = (torch.normal(mu,noise_sigma)*((mosaic>0).type(torch.float32)))*255# ensure signal and noise in the same scale

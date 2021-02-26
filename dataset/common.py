@@ -85,10 +85,12 @@ def load_cfa(cfa):
     '''
     if cfa in ['RGGB','2JCS','3JCS','4JCS','BIND41_RTN100_16']:
         mask = np.load('cfa_pattern/{}.npy'.format(cfa))
-    elif cfa in ['Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS']:
+    elif cfa in ['Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS','Random_6JCS']:
         base_pattern = np.load('cfa_pattern/random_base128.npy')
         bind_pattern = np.load('cfa_pattern/{}.npy'.format(cfa))
         mask = base_pattern*((bind_pattern!=0)[:,:,None])
+    elif cfa == 'Random_base':
+        mask = np.load('cfa_pattern/random_base128.npy')
     else:
         raise ValueError('unexpected cfa pattern')
     mask = cv2.cvtColor(mask,cv2.COLOR_BGR2RGB)
@@ -117,7 +119,8 @@ def gen_cfa_with_black(h,w,ratio):
 def get_cfa(cfa,size=None):
     mask = None
     if cfa in ['RGGB','2JCS','3JCS','4JCS','BIND41_RTN100_16',
-               'Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS']:
+               'Random_pixel','Random_2JCS','Random_3JCS',
+               'Random_4JCS','Random_6JCS','Random_base']:
         mask = load_cfa(cfa)
     elif cfa == 'Random':
         if size is None:

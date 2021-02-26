@@ -6,6 +6,9 @@ checkpoints/*
 *.png
 *.jpg
 *.zip
+*.pth
+*.log
+events.*
 results/*
 unittest_output/*
 json/*
@@ -15,3 +18,4 @@ runs
 .vscode
 test
 logs
+backup

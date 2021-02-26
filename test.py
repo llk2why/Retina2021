@@ -62,7 +62,20 @@ def main():
 
     psnrs = []
     ssims = []
-    model_dataset_name = model_name+'_on_{}'.format(opt['dataset_name'])
+    # model_dataset_name = model_name+'_on_{}'.format(opt['dataset_name'])
+    model_dataset_name = '{}_'.format(str(opt['id']).zfill(3))+model_name+'_on_{}_a={:.4f}_b={:.4f}'.format(opt['dataset_name'],opt['a'],opt['b'])
+    # print(model_dataset_noise)
+    # exit()
+
+    # result_path = '{}/{}_{}_{}_a={:.4f}_b={:.4f}'.format(
+    #     opt['cfa'],
+    #     str(opt['id']).zfill(3),
+    #     opt['network'],
+    #     opt['dataset_name'],
+    #     opt['a'],
+    #     opt['b']
+    # )
+
     for bm, test_loader in zip(bm_names, test_loaders):
         print("Test set : [{}]".format(bm))
 
@@ -88,9 +101,6 @@ def main():
 
             visuals = solver.get_current_visual(need_HR=need_HR)
             sr_list.append(visuals['demosaic'])
-            
-            # output_mosaic = cv2.cvtColor(visuals['mosaic'],cv2.COLOR_RGB2BGR)
-            # cv2.imwrite('tmp/{}.png'.format(iter),output_mosaic)
 
             # calculate PSNR/SSIM metrics on Python
             if need_HR:
@@ -126,9 +136,9 @@ def main():
                                                                       sum(total_time)/len(total_time)))
 
         # save demosaic results for further evaluation on MATLAB
-        save_img_path = os.path.join('./results/demosaic', model_dataset_name, opt['cfa'], bm)
+        save_img_path = os.path.join('./results', model_dataset_name, opt['cfa'], bm)
         if opt['output_dir'] is not None:
-            save_img_path=save_img_path.replace('./results/demosaic',opt['output_dir'])
+            save_img_path=save_img_path.replace('./results',opt['output_dir'])
 
         print("===> Saving demosaic images of [%s]... Save Path: [%s]\n" % (bm, save_img_path))
 
@@ -141,14 +151,13 @@ def main():
             # imageio.imwrite(os.path.join(save_img_path, name), img)
 
     if need_HR:
-        if opt['mode']=='demosaic':
-            result_txt_path = os.path.join('./results/demosaic', model_dataset_name, opt['cfa'],'result.txt')
-            if opt['output_dir'] is not None:
-                result_txt_path = os.path.join(opt['output_dir'], model_dataset_name, opt['cfa'],'result.txt')
-            with open(result_txt_path,'w') as f:
-                f.write('{}\n'.format(model_dataset_name.replace('_',' ')))
-                for bm,psnr,ssim in zip(bm_names,psnrs,ssims):
-                    f.write('{}:{:.2f}/{:.4f}\n'.format(bm,psnr,ssim))
+        result_txt_path = os.path.join('./results/', model_dataset_name, opt['cfa'],'result.txt')
+        if opt['output_dir'] is not None:
+            result_txt_path = os.path.join(opt['output_dir'], model_dataset_name, opt['cfa'],'result.txt')
+        with open(result_txt_path,'w') as f:
+            f.write('{}\n'.format(model_dataset_name.replace('_',' ')))
+            for bm,psnr,ssim in zip(bm_names,psnrs,ssims):
+                f.write('{}:{:.2f}/{:.4f}\n'.format(bm,psnr,ssim))
     print("==================================================")
     print("===> Finished !")
 

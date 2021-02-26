@@ -11,7 +11,7 @@ import torch.distributed as dist
 from utils import *
 from solver import Solver
 from torch.utils.tensorboard import SummaryWriter
-from dataset import LRDataset,LRHRDataset
+from dataset import LRHRDataset
 
 def init(rank, world_size, opt):
     torch.backends.cudnn.enabled=True

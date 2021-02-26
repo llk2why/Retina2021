@@ -19,6 +19,8 @@ for f in *; do
   lualatex $f;
 done
 
+rm *.aux *.log
+
 for f in *.pdf; do
   convert -density 300 $f -quality 90 `echo $f | sed 's/\(.*\.\)pdf/\1png/'`;
 done

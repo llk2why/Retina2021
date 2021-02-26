@@ -1,14 +1,13 @@
 {
     "id":1,
     "mode": "demosaic",
-    "gpu_ids": [0,1],
     "dataset_name":"MIT",
     "datasets": {
         "train": {
             "mode":"LRHR",
             "datadir": "/ssd/DemosaicDataset/MIT_Demosaic/images/train",
             "n_workers": 32,//32
-            "batch_size": 64,//64
+            "batch_size": 128,//64
             "patch_size": 128
             // "noise": {
             //     // type: Gaussian, Poisson or combination of Gaussian and Poisson

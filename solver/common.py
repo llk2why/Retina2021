@@ -104,8 +104,15 @@ def create_model(opt):
         ]:
         params = ''
         if 'RandomFuse' in opt['cfa']:
-            fusion_degree = opt['cfa'][-1]
-            params = 'fusion_degree={}'.format(fusion_degree)
+            fusion_degrees = {
+                'RandomFuse2':2,
+                'RandomFuse3':3,
+                'RandomFuse4':4,
+                'RandomFuse6':4,
+            }
+            if opt['cfa'] not in fusion_degrees:
+                raise ValueError('not supported cfa:{}'.format(opt['cfa']))
+            params = 'fusion_degree={}'.format(fusion_degrees[opt['cfa']])
             model = model + '_fusion'
         exec('from network import {}'.format(model))
         print(model)

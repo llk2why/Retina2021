@@ -1,30 +1,16 @@
 import numpy as np
 
+from cfa_pattern import TYPE_LOC_DELTA
+
 def _process_capsule(mosaic,bind_pattern,mask,capsule_type):
     index = bind_pattern==capsule_type
     assert mosaic.dtype == np.float32
-    type_loc_delta = {
-        1:[],
-        2:[(0,1)],
-        3:[(1,0)],
-        4:[(0,1),(1,1)],
-        5:[(1,0),(1,1)],
-        6:[(1,0),(0,1)],
-        7:[(-1,0),(0,-1)],
-        8:[(0,1),(0,2)],
-        9:[(1,0),(2,0)],
-        10:[(0,1),(1,0),(1,1)],
-        11:[(1,0),(2,0),(2,1)],
-        12:[(1,0),(2,0),(3,0)],
-        13:[(0,1),(0,2),(0,3)],
-        14:[(0,1),(1,1),(1,2)]
-    }
     index_list = []
     sum = np.zeros_like(mosaic).astype(np.float32)
     sum[index] = mosaic[index]
 
     total_idx = index.copy()
-    for di,dj in type_loc_delta[capsule_type]:
+    for di,dj in TYPE_LOC_DELTA[capsule_type]:
         idx = index.copy()
         if di!=0: idx = np.concatenate((idx[-di:,:],idx[:-di,:]),axis=0)
         if dj!=0: idx = np.concatenate((idx[:,-dj:],idx[:,:-dj]),axis=1)
@@ -39,22 +25,6 @@ def _process_capsule(mosaic,bind_pattern,mask,capsule_type):
 
 
 def check_capsule(mosaic,bind_pattern,mask):
-    type_loc_delta = {
-        1:[],
-        2:[(0,1)],
-        3:[(1,0)],
-        4:[(0,1),(1,1)],
-        5:[(1,0),(1,1)],
-        6:[(1,0),(0,1)],
-        7:[(-1,0),(0,-1)],
-        8:[(0,1),(0,2)],
-        9:[(1,0),(2,0)],
-        10:[(0,1),(1,0),(1,1)],
-        11:[(1,0),(2,0),(2,1)],
-        12:[(1,0),(2,0),(3,0)],
-        13:[(0,1),(0,2),(0,3)],
-        14:[(0,1),(1,1),(1,2)]
-    }
     h,w,c = mosaic.shape
     sum = np.sum(mosaic,axis=2)
     for i in range(h):
@@ -64,8 +34,8 @@ def check_capsule(mosaic,bind_pattern,mask):
                     return False
     for i in range(h):
         for j in range(w):
-            if bind_pattern[i,j] not in type_loc_delta: continue
-            for di,dj in type_loc_delta[bind_pattern[i,j]]:
+            if bind_pattern[i,j] not in TYPE_LOC_DELTA: continue
+            for di,dj in TYPE_LOC_DELTA[bind_pattern[i,j]]:
                 ii,jj = i+di,j+dj
                 if(sum[ii][jj]!=sum[i][j]):
                     tmp = mosaic[i:i+3,j:j+3]

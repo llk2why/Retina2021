@@ -26,14 +26,8 @@ def parse(args,rank=None,world_size=None):
 
     opt['timestamp'] = get_timestamp()
     
-    # export CUDA_VISIBLE_DEVICES
-    if torch.cuda.is_available():
-        gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
-        os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
-        print('===> Export CUDA_VISIBLE_DEVICES = [' + gpu_list + ']')
-    else:
+    if not torch.cuda.is_available():
         raise ValueError('Only GPU mode is supported')
-
     
     # datasets
     for phase, dataset in opt['datasets'].items():

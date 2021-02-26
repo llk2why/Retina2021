@@ -1,25 +1,17 @@
 import os
+import sys
 import cv2
 import numpy as np
 
+from config import TYPE_LOC_DELTA
 
-type_loc_delta = {
-    1:[],
-    2:[(0,1)],
-    3:[(1,0)],
-    4:[(0,1),(1,1)],
-    5:[(1,0),(1,1)],
-    6:[(1,0),(0,1)],
-    7:[(-1,0),(0,-1)],
-    8:[(0,1),(0,2)],
-    9:[(1,0),(2,0)],
-    10:[(0,1),(1,0),(1,1)],
-    11:[(1,0),(2,0),(2,1)],
-    12:[(1,0),(2,0),(3,0)],
-    13:[(0,1),(0,2),(0,3)],
-    14:[(0,1),(1,1),(1,2)]
-}
-
+pattern_list = [
+    'Random_pixel',
+    'Random_2JCS',
+    'Random_3JCS',
+    'Random_4JCS',
+    'Random_6JCS'
+]
 
 def gen_random_base128():
     if os.path.exists('random_base128.npy'):
@@ -38,7 +30,7 @@ def gen_random_base128():
 
 def check_valid(pattern,capsule_type,i,j):
     if capsule_type==1: return True
-    for di,dj in type_loc_delta[capsule_type]:
+    for di,dj in TYPE_LOC_DELTA[capsule_type]:
         ii,jj = i+di,j+dj
         if ii<0 or ii>=128 or jj<0 or jj>=128:
             return False
@@ -49,13 +41,13 @@ def check_valid(pattern,capsule_type,i,j):
 
 def fill_capsule(pattern,capsule_type,i,j):
     pattern[i][j]=capsule_type
-    for di,dj in type_loc_delta[capsule_type]:
+    for di,dj in TYPE_LOC_DELTA[capsule_type]:
         ii,jj = i+di,j+dj
         pattern[ii][jj]=-capsule_type
 
 def get_cover():
     cover = np.zeros((128,128)).astype(np.bool)
-    for pattern_name in ['Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS']:
+    for pattern_name in pattern_list:
         npy_path = pattern_name+'.npy'
         if os.path.exists(npy_path):
             pattern = np.load(npy_path)
@@ -76,8 +68,11 @@ def _gen_random_pattern(capsule_class,ratio,retain=True):
     elif capsule_class == 4:
         candidates = [10,11,12,13,14]
         name = 'Random_4JCS'
+    elif capsule_class == 6:
+        candidates = [61,62,63,64,65,66,67,68,69]
+        name = 'Random_6JCS'
     else:
-        raise ValueError('.')
+        raise ValueError('unsupported joint number:{}'.format(capsule_class))
     npy_name = name+'.npy'
     png_name = name+'.png'
     png_path = 'images/plain_pattern/'+png_name
@@ -136,18 +131,23 @@ def gen_random_3JCS(ratio=0.5,retain=True):
 def gen_random_4JCS(ratio=0.5,retain=True):
     _gen_random_pattern(4,ratio=ratio,retain=retain)
 
+def gen_random_6JCS(ratio=0.5,retain=True):
+    _gen_random_pattern(6,ratio=ratio,retain=retain)
+
 
 def check_conflict():
-    for pattern_name in ['Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS']:
+    for pattern_name in pattern_list:
         npy_path = pattern_name+'.npy'
         if not os.path.exists(npy_path): continue
         pattern = np.load(npy_path)
+        if '6' in pattern_name:
+            print(pattern[10:28,0:10])
         conflict_flag = False
         for i in range(128):
             for j in range(128):
                 capsule_type = pattern[i,j]
                 if capsule_type>0:
-                    for di,dj in type_loc_delta[capsule_type]:
+                    for di,dj in TYPE_LOC_DELTA[capsule_type]:
                         ii,jj = i+di,j+dj
                         if ii<0 or ii>=128 or jj<0 or jj>=128 or \
                            pattern[ii,jj]!=-capsule_type:
@@ -160,7 +160,7 @@ def check_conflict():
         else: print('The test passed')
 
 def count_capsule_type():
-    for pattern_name in ['Random_pixel','Random_2JCS','Random_3JCS','Random_4JCS']:
+    for pattern_name in pattern_list:
         npy_path = pattern_name+'.npy'
         if not os.path.exists(npy_path): continue
         pattern = np.load(npy_path)
@@ -196,26 +196,29 @@ def remove_npy():
     os.system('rm 2JCS_pixel.npy')
     os.system('rm 3JCS_pixel.npy')
     os.system('rm 4JCS_pixel.npy')
+    os.system('rm 6JCS_pixel.npy')
 
 
 def main():
     while True:
         gen_random_base128()
         # remove_npy()
-        retain_list = [True,True,True,True]
+        retain_list = [True,True,True,True,True,True]
         npy_list = [
             'Random_pixel.npy',
             'Random_2JCS.npy',
             'Random_3JCS.npy',
-            'Random_4JCS.npy'
+            'Random_4JCS.npy',
+            'Random_6JCS.npy'
         ]
         for flag,npy_path in zip(retain_list,npy_list):
             if not flag and os.path.exists(npy_path):
                 os.remove(npy_path)
-        gen_random_pixel(ratio=0.8,retain=retain_list[0])
-        gen_random_2JCS(ratio=0.85,retain=retain_list[1])
-        gen_random_3JCS(ratio=0.99,retain=retain_list[2])
-        gen_random_4JCS(ratio=0.99,retain=retain_list[3])
+        # gen_random_pixel(ratio=0.8,retain=retain_list[0])
+        # gen_random_2JCS(ratio=0.85,retain=retain_list[1])
+        # gen_random_3JCS(ratio=0.99,retain=retain_list[2])
+        # gen_random_4JCS(ratio=0.99,retain=retain_list[3])
+        gen_random_6JCS(ratio=0.99,retain=retain_list[4])
         check_conflict()
         count_capsule_type()
         coverage = check_coverage()
@@ -224,4 +227,4 @@ def main():
         print('\n\n\n')
 
 if __name__ == '__main__':
-    main()ht    
+    main()
