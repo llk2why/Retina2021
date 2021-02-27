@@ -99,7 +99,7 @@ class LRHRDataset(data.Dataset):
         if self.basic_mask is None:
             self.basic_mask = common.get_cfa(self.cfa,shape)
             # keep periodicity even if paving basic mask as tiles
-            if self.opt[cfa]=='3JCS':
+            if self.cfa=='3JCS':
                 self.basic_mask = self.basic_mask[:120,:120]
         if self.basic_mask is None: 
             raise ValueError('None here')
