@@ -161,7 +161,7 @@ class LRHRDataset(data.Dataset):
         opt = self.opt
         if self.train:
             patch_size = opt['patch_size']
-            ground_truth = common.get_random_patch(ground_truth,patch_size=opt['patch_size'])
+            ground_truth = common.get_random_patch(ground_truth,patch_size=patch_size)
         if opt['augment'] is not None and opt['augment']:
             ground_truth = common.augment([ground_truth])
         return ground_truth, ground_truth_path
@@ -305,7 +305,7 @@ class LRHRDataset(data.Dataset):
         ========================↓↓↓torch tensor↓↓↓=====================================
         """
         transform = ToTensor()
-        if self.cfa in self.random_type_class or 'BIND' in self.cfa:
+        if self.cfa in self.random_type_class.values() or 'BIND' in self.cfa:
             mosaic = transform(mosaic.astype(np.float32))    # np.float32 =>   tensor.float32
         else:
             mosaic = transform(mosaic.astype(np.int16))      # np.int16   =>   tensor.int16
