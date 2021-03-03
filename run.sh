@@ -31,12 +31,27 @@
 # done
 
 
-python train.py \
-    --opt options/train/train_MIT_config.json \
-    --network JointPixel \
-    --cfa Random_base \
-    -b 0.1 \
+# python train.py \
+#     --opt options/train/train_MIT_config.json \
+#     --network JointPixel \
+#     --cfa Random_base \
+    # -b 0.1 \
     # --cfa Random_6JCS
+
+# python train.py \
+#     --opt options/train/train_MIT_config.json \
+#     --network JointPixel \
+#     --cfa RandomFuse6
+
+# for cfa in RandomFuse6 Random_6JCS 
+for cfa in RandomFuse3 RandomFuse4
+do
+    python train.py \
+        --opt options/train/train_MIT_config.json \
+        --network JointPixel \
+        --cfa $cfa 
+        # --pretrained_path checkpoints/$cfa/001_JointPixel_MIT_a=0.0000_b=0.0000/epochs/last_ckp.pth
+done
 
 # python train.py \
 #     --opt options/train/train_MIT_config.json \

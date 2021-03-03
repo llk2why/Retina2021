@@ -6,6 +6,7 @@
         "train": {
             "mode":"LRHR",
             "datadir": "/ssd/DemosaicDataset/MIT_Demosaic/images/train",
+            "augment":false,
             "n_workers": 32,//32
             "batch_size": 128,//64
             "patch_size": 128
@@ -26,7 +27,7 @@
 
     "solver": {
         "type": "ADAM",
-        "num_epochs": 40,//20
+        "num_epochs": 20,//20
         "learning_rate": 0.0004,
         "weight_decay": 0.00001,
         "lr_scheme": "MultiStepLR",

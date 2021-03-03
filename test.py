@@ -7,7 +7,7 @@ import options.option as option
 
 from utils import util
 from solver import Solver
-from dataset import LRDataset,LRHRDataset
+from dataset import LRHRDataset
 
 
 def parse_args():

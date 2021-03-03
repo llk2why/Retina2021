@@ -5,18 +5,23 @@ import matplotlib.pyplot as plt
 
 
 cfa_order = [
+    'Random_6JCS',
     'Random_4JCS',
     'Random_3JCS',
     'Random_2JCS',
+    '4JCS',
+    '3JCS',
     '2JCS',
     'Random_pixel',
     'RandomFuse2',
     'RandomFuse3',
-    'RandomFuse4',
+    # 'RandomFuse4',
+    'RandomFuse6',
+    'Random_base',
     'RGGB'
 ]
 
-result_txts = glob.glob('../results/demosaic/*/*/*.txt')
+result_txts = glob.glob('../results/001_JOINTPIXEL_on_MIT_a=0.0000_b=0.0000/*/*.txt')
 
 def parse_result(txt_path):
     result = {}
@@ -36,8 +41,9 @@ def gather_result():
     for result_txt in result_txts:
         cfa,res = parse_result(result_txt)
         results[cfa] = res
-    label_list = ['R4','R3','R2','2JCS','R1','RF2','RF3','RF4','RGGB']
-    label_list = ['Random_4JCS','Random_3JCS','Random_2JCS','2JCS','Random_pixel','RandomFuse2','RandomFuse3','RandomFuse4','RGGB']
+    # label_list = ['R4','R3','R2','2JCS','R1','RF2','RF3','RF4','RGGB']
+    # label_list = ['Random_4JCS','Random_3JCS','Random_2JCS','2JCS','Random_pixel','RandomFuse2','RandomFuse3','RandomFuse4','RGGB']
+    label_list = cfa_order
     kodak_psnr = [float(results[cfa]["Kodak"].split('/')[0]) for cfa in cfa_order]
     mcm_psnr = [float(results[cfa]["McM"].split('/')[0]) for cfa in cfa_order]
     moire_psnr = [float(results[cfa]["moire"].split('/')[0]) for cfa in cfa_order]

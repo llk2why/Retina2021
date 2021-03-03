@@ -14,7 +14,9 @@
 # done
 
 # for cfa in RandomFuse2 RandomFuse3 RandomFuse4  Random_pixel Random_2JCS Random_3JCS Random_4JCS RGGB 2JCS
-for cfa in RGGB RandomFuse4
+# for cfa in RGGB RandomFuse4
+# for cfa in 2JCS 3JCS 4JCS RandomFuse2 RandomFuse3 RandomFuse6 Random_6JCS
+for cfa in Random_base
 do
     # echo checkpoints/$cfa/001_JointPixel_MIT_a=0.0000_b=0.0000/epochs/best_ckp.pth
     python test.py \
