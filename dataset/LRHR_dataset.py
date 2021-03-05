@@ -110,7 +110,7 @@ class LRHRDataset(data.Dataset):
         ground_truth, ground_truth_path = self._load_ground_truth(idx)
         # add noise for random jcs
         noise = None
-        if self.noise_flag and (self.cfa in self.capsule_cfas or self.cfa in self.random_type_class):
+        if self.noise_flag and (self.cfa in self.capsule_cfas or self.cfa in self.fusion_options):
             a,b = self.opt['a'],self.opt['b']
             if not common.is_zero(a):
                 raise ValueError('parameter a is not supported for capsule cfa')
