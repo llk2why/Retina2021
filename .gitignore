@@ -21,3 +21,5 @@ logs
 backup
 mid_results
 *.tar
+*.pdf
+*.aux
