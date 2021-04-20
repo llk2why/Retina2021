@@ -19,3 +19,5 @@ runs
 test
 logs
 backup
+mid_results
+*.tar

@@ -5,23 +5,30 @@ import matplotlib.pyplot as plt
 
 
 cfa_order = [
-    'Random_6JCS',
-    'Random_4JCS',
-    'Random_3JCS',
-    'Random_2JCS',
-    '4JCS',
-    '3JCS',
-    '2JCS',
-    'Random_pixel',
-    'RandomFuse2',
-    'RandomFuse3',
+    # 'Random_6JCS',
+    # 'Random_4JCS',
+    # 'Random_3JCS',
+    # 'Random_2JCS',
+    # '4JCS',
+    # '3JCS',
+    # '2JCS',
+    # 'Random_pixel',
+    # 'RandomFuse2',
+    # 'RandomFuse3',
     # 'RandomFuse4',
-    'RandomFuse6',
+    # 'RandomFuse6',
+    'RandomBaseFuse2',
+    'RandomBaseFuse3',
+    'RandomBaseFuse4',
+    'RandomBaseFuse6',
     'Random_base',
-    'RGGB'
+    # 'RGGB'
 ]
 
-result_txts = glob.glob('../results/001_JOINTPIXEL_on_MIT_a=0.0000_b=0.0000/*/*.txt')
+a = 0.0
+b = 0.04
+
+result_txts = glob.glob('../results/001_JOINTPIXEL_on_MIT_a={:.4f}_b={:.4f}/*/*.txt'.format(a,b))
 
 def parse_result(txt_path):
     result = {}
@@ -79,7 +86,9 @@ def gather_result():
     ax.legend()
 
     fig.tight_layout()
-    plt.savefig('retina_result.png')
+    import datetime
+    date = datetime.datetime.now().strftime('%Y%m%d')
+    plt.savefig('retina_result_a={:.4f}_b={:.4f}_{}.png'.format(a,b,date))
 
 gather_result()
 

@@ -103,12 +103,16 @@ def create_model(opt):
             'DoublePath'
         ]:
         params = ''
-        if 'RandomFuse' in opt['cfa']:
+        if 'RandomFuse' in opt['cfa'] or 'RandomBaseFuse' in opt['cfa']:
             fusion_degrees = {
                 'RandomFuse2':2,
                 'RandomFuse3':3,
                 'RandomFuse4':4,
                 'RandomFuse6':4,
+                'RandomBaseFuse2':2,
+                'RandomBaseFuse3':3,
+                'RandomBaseFuse4':4,
+                'RandomBaseFuse6':4,
             }
             if opt['cfa'] not in fusion_degrees:
                 raise ValueError('not supported cfa:{}'.format(opt['cfa']))

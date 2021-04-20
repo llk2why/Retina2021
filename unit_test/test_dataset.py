@@ -12,20 +12,21 @@ os.chdir(dst_dir)
 print('changing workspace to %s ...' % os.getcwd())
 sys.path.append(os.getcwd())
 
-from dataset.LRHR_dataset import LRHRDataset
+from dataset.LRHR_dataset2 import LRHRDataset
 from cfa_pattern import TYPE_LOC_DELTA
 
 opt = {
-    'cfa':'2JCS',
+    'cfa':'RandomFuse3',
     'phase':'train',
     'a':0.0,
-    'b':0.0,
+    'b':0.02,
     'datadir':'/ssd/DemosaicDataset/test_small_dataset',
     'patch_size':128,
     'augment':False
 }
 
 random_type_class = {
+    0:'Random_base',
     1:'Random_pixel',
     2:'Random_2JCS',
     3:'Random_3JCS',
@@ -45,7 +46,11 @@ fusion_options = {
     'RandomFuse2':[1,2],
     'RandomFuse3':[1,2,3],
     'RandomFuse4':[1,2,3,4],
-    'RandomFuse6':[1,2,4,6]
+    'RandomFuse6':[1,2,4,6],
+    'RandomBaseFuse2':[0,2],
+    'RandomBaseFuse3':[0,2,3],
+    'RandomBaseFuse4':[0,2,3,4],
+    'RandomBaseFuse6':[0,2,4,6]
 }
 
 
@@ -312,6 +317,7 @@ def verify():
     res = True
     for i in range(dataset.__len__()):
         items = dataset.__getitem__(i)
+        if opt['b']>0.0:continue
         mosaic = items['mosaic']
         ground_truth = items['ground_truth']
         ground_truth_path = items['ground_truth_path']

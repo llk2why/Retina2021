@@ -28,9 +28,9 @@ class LRHRDataset(data.Dataset):
             'RGGB',
             'Random',
             'Random16',
-            'Random_RandomBlack20',
             'BIND41_RTN100_16',
             'RandomBlack20',
+            'Random_RandomBlack20',
             'Random_base',
             'Random_pixel',
             'Random_2JCS',
@@ -41,14 +41,9 @@ class LRHRDataset(data.Dataset):
             'RandomFuse3',
             'RandomFuse4',
             'RandomFuse6',
-            'RandomBaseFuse2',
-            'RandomBaseFuse3',
-            'RandomBaseFuse4',
-            'RandomBaseFuse6',
         ]
 
         self.random_type_class = {
-            0:'Random_base',
             1:'Random_pixel',
             2:'Random_2JCS',
             3:'Random_3JCS',
@@ -57,7 +52,6 @@ class LRHRDataset(data.Dataset):
         }
 
         self.capsule_cfas = [
-            'Random_base',
             'Random_pixel',
             'Random_2JCS',
             'Random_3JCS',
@@ -69,11 +63,7 @@ class LRHRDataset(data.Dataset):
             'RandomFuse2':[1,2],
             'RandomFuse3':[1,2,3],
             'RandomFuse4':[1,2,3,4],
-            'RandomFuse6':[1,2,4,6],
-            'RandomBaseFuse2':[0,2],
-            'RandomBaseFuse3':[0,2,3],
-            'RandomBaseFuse4':[0,2,3,4],
-            'RandomBaseFuse6':[0,2,4,6]
+            'RandomFuse6':[1,2,4,6]
         }
 
         # gaussian & poisson noise combine, pixel value domain nomailized to 1
@@ -126,8 +116,9 @@ class LRHRDataset(data.Dataset):
             a,b = self.opt['a'],self.opt['b']
             if not common.is_zero(a):
                 raise ValueError('parameter a is not supported for capsule cfa')
-            noise = np.random.normal(loc=0,scale=np.sqrt(b),size=ground_truth.shape)*255
-        if 'RandomFuse' in self.cfa or 'RandomBaseFuse' in self.cfa:
+            print('noise a:{:.4f} b:{:.4f}'.format(a,b))
+            noise = np.random.normal(loc=0,scale=np.sqrt(b),size=ground_truth.shape)
+        if 'RandomFuse' in self.cfa:
             real_cfa = self.cfa
             mosaics = []
             for option in self.fusion_options[real_cfa]:
@@ -137,8 +128,6 @@ class LRHRDataset(data.Dataset):
                 mosaic, mask = common.remosaic(ground_truth_,self.cfa,self.basic_mask)
                 if noise is not None:
                     mosaic = mosaic.astype(np.float32) + noise*mask
-                    mosaic[mosaic<0.]=0.
-                    mosaic[mosaic>255.]=255.
                 mosaic, ground_truth_ = self._preprocess(mosaic, ground_truth_,mask)
                 mosaics.append(mosaic)
                 self.basic_mask = None
@@ -150,8 +139,6 @@ class LRHRDataset(data.Dataset):
             mosaic, mask = common.remosaic(ground_truth,self.cfa,self.basic_mask)
             if noise is not None:
                 mosaic = mosaic.astype(np.float32) + noise*mask
-                mosaic[mosaic<0.]=0.
-                mosaic[mosaic>255.]=255.
             mosaic, ground_truth = self._preprocess(mosaic, ground_truth,mask)
         self._reset()
         return {'mosaic': mosaic, 'ground_truth': ground_truth, 'ground_truth_path': ground_truth_path}
@@ -289,16 +276,15 @@ class LRHRDataset(data.Dataset):
 
     def _process_random_joint_pattern(self, mosaic, mask):
         cfa = self.cfa
+        if cfa not in self.bind_patterns:
+            self.bind_patterns[cfa] = np.load('cfa_pattern/{}.npy'.format(cfa))
+        bind_pattern = self.bind_patterns[cfa]
 
-        if cfa=='Random_pixel' or cfa=='Random_base': return mosaic
+        if cfa=='Random_pixel': return mosaic
         elif cfa=='Random_2JCS': capsule_types = [2,3]
         elif cfa=='Random_3JCS': capsule_types = [4,5,6,7,8,9]
         elif cfa=='Random_4JCS': capsule_types = [10,11,12,13,14]
         elif cfa=='Random_6JCS': capsule_types = [61,62,63,64,65,66,67,68,69]
-
-        if cfa not in self.bind_patterns:
-            self.bind_patterns[cfa] = np.load('cfa_pattern/{}.npy'.format(cfa))
-        bind_pattern = self.bind_patterns[cfa]
         
         for capsule_type in capsule_types:
             mosaic = self._process_capsule(mosaic,bind_pattern,mask,capsule_type)

@@ -43,7 +43,7 @@ def is_image_file(filename):
 def _get_paths_from_images(path):
     assert os.path.isdir(path), '[Error] {} is not a valid directory'.format(path)
     images = []
-    for dirpath, _, fnames in sorted(os.walk(path)):
+    for dirpath, _, fnames in sorted(os.walk(path,followlinks=True)):
         for fname in sorted(fnames):
             if is_image_file(fname):
                 img_path = os.path.join(dirpath, fname)
@@ -132,6 +132,21 @@ def get_cfa(cfa,size=None):
         flatten_mask = np.random.randint(0,3,size=(h,w))
         ones = np.ones((h,w,3))
         mask = np.stack([np.where(flatten_mask == i, ones[:, :, i], 0) for i in range(3)], axis=-1)
+    elif cfa == 'Random_RandomBlack20':
+        p = np.random.rand()
+        if size is None:
+            raise ValueError('Random pattern without size!')
+        if len(size)==3:
+            size = size[:2]
+        assert len(size) == 2, 'Invalid parameter for size'
+        h,w = size
+        if p<0.8:
+            flatten_mask = np.random.randint(0,3,size=(h,w))
+            ones = np.ones((h,w,3))
+            mask = np.stack([np.where(flatten_mask == i, ones[:, :, i], 0) for i in range(3)], axis=-1)
+        else:
+            mask = gen_cfa_with_black(h,w,0.2)
+
     elif cfa == 'Random16':
         flatten_mask = np.random.randint(0,3,size=(16,16))
         ones = np.ones((16,16,3))

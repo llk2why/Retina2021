@@ -64,6 +64,7 @@ class JointPixel_fusion(nn.Module):
 
         fusion_stage3_left_output = []
         fusion_stage3_right_output = []
+        print_fusion_stage3_right_output = []
         for i,input in enumerate(input_list):
             stage1_output = self.stage1(input)
             stage2_output = self.stage2(stage1_output)
@@ -71,7 +72,10 @@ class JointPixel_fusion(nn.Module):
             stage3_right_intput = self.stage3_right(stage2_output)
             stage3_right_output = stage3_right_intput + self.shortcut(input)
             fusion_stage3_left_output.append(stage3_left_output*self.w1[i].expand_as(stage3_left_output))
+            print_fusion_stage3_right_output.append(stage3_right_output.clone())
             fusion_stage3_right_output.append(stage3_right_output*self.w2[i].expand_as(stage3_right_output))
+        if self.debug:
+            fusion_stage3_right_output_ = fusion_stage3_right_output.copy()
         fusion_stage3_left_output = torch.stack(fusion_stage3_left_output, dim=0).sum(dim=0)
         fusion_stage3_right_output = torch.stack(fusion_stage3_right_output, dim=0).sum(dim=0)
 
@@ -80,7 +84,7 @@ class JointPixel_fusion(nn.Module):
         stage5_input  = self.stage5(stage4_output)
         stage5_output = stage5_input + self.shortcut(stage3_right_output)
         if self.debug:
-            return stage3_right_output,stage5_output,stage5_input
+            return fusion_stage3_right_output_,print_fusion_stage3_right_output,fusion_stage3_right_output,stage5_input,stage5_output
         else:
             return stage5_output
 

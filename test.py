@@ -1,4 +1,5 @@
 import cv2
+import json
 import tqdm
 import torch
 # import imageio
@@ -75,7 +76,7 @@ def main():
     #     opt['a'],
     #     opt['b']
     # )
-
+    metric_result = {}
     for bm, test_loader in zip(bm_names, test_loaders):
         print("Test set : [{}]".format(bm))
 
@@ -84,6 +85,7 @@ def main():
 
         total_psnr = []
         total_ssim = []
+        total_path = []
         total_time = []
 
         print(test_loader.dataset.__class__.__name__)
@@ -105,23 +107,25 @@ def main():
             # calculate PSNR/SSIM metrics on Python
             if need_HR:
                 # im_target = imageio.imread(batch['ground_truth_path'][0],pilmode='RGB')
-                im_target = cv2.imread(batch['ground_truth_path'][0])
+                img_path = batch['ground_truth_path'][0]
+                im_target = cv2.imread(img_path)
                 im_target = cv2.cvtColor(im_target,cv2.COLOR_BGR2RGB)
                 psnr, ssim = util.calc_metrics(visuals['demosaic'], visuals['ground_truth'])
                 total_psnr.append(psnr)
                 total_ssim.append(ssim)
-                path_list.append(os.path.basename(batch['ground_truth_path'][0]).replace('ground_truth', model_name))
+                total_path.append(img_path)
+                path_list.append(os.path.basename(img_path).replace('ground_truth', model_name))
                 print("[%d/%d] %s || PSNR(dB)/SSIM: %.2f/%.4f || Timer: %.4f sec ." % (iter+1, len(test_loader),
-                                                                                       os.path.basename(batch['ground_truth_path'][0]),
+                                                                                       os.path.basename(img_path),
                                                                                        psnr, ssim,
                                                                                        (t1 - t0)))
-                # im_target = imageio.imread(batch['ground_truth_path'][0])
+                # im_target = imageio.imread(img_path)
                 tmp_psnr = util.calc_psnr(visuals['demosaic'],im_target)
                 print('new PSNR: {:.2f} delta:{:.2f}'.format(tmp_psnr,tmp_psnr-psnr))
             else:
-                path_list.append(os.path.basename(batch['ground_truth_path'][0]))
+                path_list.append(os.path.basename(img_path))
                 print("[%d/%d] %s || Timer: %.4f sec ." % (iter + 1, len(test_loader),
-                                                           os.path.basename(batch['ground_truth_path'][0]),
+                                                           os.path.basename(img_path),
                                                            (t1 - t0)))
 
         if need_HR:
@@ -131,6 +135,11 @@ def main():
                                                                   sum(total_time)/len(total_time)))
             psnrs.append(sum(total_psnr)/len(total_psnr))
             ssims.append(sum(total_ssim)/len(total_ssim))
+            metric_result[bm] = {
+                'path':total_path,
+                'psnr':total_psnr,
+                'ssim':total_ssim
+            }
         else:
             print("---- Average Speed(s) for [%s] is %.4f sec ----" % (bm,
                                                                       sum(total_time)/len(total_time)))
@@ -152,12 +161,15 @@ def main():
 
     if need_HR:
         result_txt_path = os.path.join('./results/', model_dataset_name, opt['cfa'],'result.txt')
+        result_json_path = os.path.join('./results/', model_dataset_name, opt['cfa'],'result.json')
         if opt['output_dir'] is not None:
             result_txt_path = os.path.join(opt['output_dir'], model_dataset_name, opt['cfa'],'result.txt')
+            result_json_path = os.path.join(opt['output_dir'], model_dataset_name, opt['cfa'],'result.json')
         with open(result_txt_path,'w') as f:
             f.write('{}\n'.format(model_dataset_name.replace('_',' ')))
             for bm,psnr,ssim in zip(bm_names,psnrs,ssims):
                 f.write('{}:{:.2f}/{:.4f}\n'.format(bm,psnr,ssim))
+        json.dump(metric_result,open(result_json_path,'w'),indent=2)
     print("==================================================")
     print("===> Finished !")
 

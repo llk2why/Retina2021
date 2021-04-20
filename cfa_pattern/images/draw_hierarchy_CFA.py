@@ -123,14 +123,15 @@ def get_pattern(capsule_class):
     cfa = np.argmax(flatten_pattern,axis=2)
 
     info = {
+        1:'Random_pixel',
         2:'Random_2JCS',
         3:'Random_3JCS',
         4:'Random_4JCS',
         6:'Random_6JCS',
     }
 
-    if capsule_class == 1:
-        name = 'Random_pixel'
+    if capsule_class == 0:
+        name = 'Random_base'
         draw_code = np.ones((128,128))
     elif capsule_class in info:
         name = info[capsule_class]
@@ -145,8 +146,7 @@ def get_pattern(capsule_class):
 
 def main():
     os.makedirs('hierarchy_cfa',exist_ok=True)
-    # for i in range(1,6):
-    for i in [6]:
+    for i in [0,1]:
         params = get_pattern(i)
         convert(params,i)
 
