@@ -110,6 +110,23 @@ def main():
                 img_path = batch['ground_truth_path'][0]
                 im_target = cv2.imread(img_path)
                 im_target = cv2.cvtColor(im_target,cv2.COLOR_BGR2RGB)
+
+                if opt['cfa'] == '2JCS':
+                    h,w,c = im_target.shape
+                    if h%2==1:im_target = im_target[:h-1]
+
+                if opt['cfa'] == '3JCS':
+                    h,w,c = im_target.shape
+                    if h%3==2: pass
+                    elif h%3==1: im_target = im_target[:h-2]
+                    elif h%3==0: im_target = im_target[:h-1]
+                    if w%2==1:im_target = im_target[:,:w-1]
+
+                if opt['cfa'] == '4JCS':
+                    h,w,c = im_target.shape
+                    if h%2==1:im_target = im_target[:h-1]
+                    if w%2==1:im_target = im_target[:,:w-1]
+
                 psnr, ssim = util.calc_metrics(visuals['demosaic'], visuals['ground_truth'])
                 total_psnr.append(psnr)
                 total_ssim.append(ssim)

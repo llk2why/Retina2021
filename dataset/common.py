@@ -7,7 +7,7 @@ from math import ceil
 
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', 'tif', 'TIF']
 BINARY_EXTENSIONS = ['.npy']
-BENCHMARK = ['Kodak', 'McM', 'moire','MSR','MIT','vdp','Sandwich']
+BENCHMARK = ['Kodak', 'McM', 'moire','MSR','vdp','Sandwich']
 
 
 BIND_PATTERN = {

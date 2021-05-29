@@ -92,27 +92,80 @@
 
 
 
-for cfa in RGGB 2JCS 3JCS 4JCS
+# for cfa in RGGB 2JCS 3JCS 4JCS
+# for cfa in 4JCS
+# do
+#     for b in 0.0100 0.0300 0.0400
+#     do
+#         python train.py \
+#             --opt options/train/train_MIT_config.json \
+#             --network JointPixel \
+#             --cfa $cfa \
+#             -b $b
+#     done
+# done
+
+
+# for cfa in RGGB 2JCS 3JCS 4JCS
+# do
+#     for a in 0.0100 0.0200 0.0300 0.0400
+#     do
+#         python train.py \
+#             --opt options/train/train_MIT_config.json \
+#             --network JointPixel \
+#             --cfa $cfa \
+#             -a $a
+#     done
+# done
+
+# for a in 0.0100 0.0200
+# do
+#     for cfa in 2JCS 3JCS 4JCS
+#     do
+#         python train.py \
+#             --opt options/train/train_MIT_config.json \
+#             --network JointPixel \
+#             --cfa $cfa \
+#             -a $a
+#     done
+# done
+
+# for a in 0.0100
+# do
+#     for cfa in 4JCS
+#     do
+#         python train.py \
+#             --opt options/train/train_MIT_config.json \
+#             --network JointPixel \
+#             --cfa $cfa \
+#             -a $a \
+#             --pretrained_path checkpoints/$cfa/001_JointPixel_MIT_a=${a}_b=0.0000/epochs/last_ckp.pth
+#     done
+# done
+
+# for a in 0.0200
+# do
+#     for cfa in 3JCS 2JCS 4JCS
+#     do
+#         python train.py \
+#             --opt options/train/train_MIT_config.json \
+#             --network JointPixel \
+#             --cfa $cfa \
+#             -a $a \
+#             --pretrained_path checkpoints/$cfa/001_JointPixel_MIT_a=${a}_b=0.0000/epochs/last_ckp.pth
+#     done
+# done
+
+for b in 0.0200
 do
-    for b in 0.0100 0.0300 0.0400
+for cfa in Random_pixel
     do
         python train.py \
             --opt options/train/train_MIT_config.json \
             --network JointPixel \
             --cfa $cfa \
-            -b $b
+            -b $b 
+            # --pretrained_path checkpoints/$cfa/001_JointPixel_MIT_a=0.0000_b=${b}/epochs/last_ckp.pth
     done
 done
 
-
-for cfa in RGGB 2JCS 3JCS 4JCS
-do
-    for a in 0.0100 0.0200 0.0300 0.0400
-    do
-        python train.py \
-            --opt options/train/train_MIT_config.json \
-            --network JointPixel \
-            --cfa $cfa \
-            -a $a
-    done
-done

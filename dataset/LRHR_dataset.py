@@ -174,6 +174,25 @@ class LRHRDataset(data.Dataset):
         idx = self._get_index(idx)
         ground_truth_path = self.paths_ground_truth[idx]
         ground_truth = common.read_img(ground_truth_path)
+
+        if self.cfa == '2JCS':
+            h,w,c = ground_truth.shape
+            if h%2==1:ground_truth = ground_truth[:h-1]
+
+        if self.cfa == '3JCS':
+            h,w,c = ground_truth.shape
+            if h%3==2: pass
+            elif h%3==1: ground_truth = ground_truth[:h-2]
+            elif h%3==0: ground_truth = ground_truth[:h-1]
+
+            if w%2==1:ground_truth = ground_truth[:,:w-1]
+        
+        if self.cfa == '4JCS':
+            h,w,c = ground_truth.shape
+            if h%2==1:ground_truth = ground_truth[:h-1]
+            if w%2==1:ground_truth = ground_truth[:,:w-1]
+            
+
         opt = self.opt
         if self.train:
             patch_size = opt['patch_size']
